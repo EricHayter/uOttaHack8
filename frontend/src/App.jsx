@@ -37,6 +37,101 @@ function App() {
     'Pescatarian'
   ]
 
+  // Recipe Card Component
+  const RecipeCard = ({ recipe }) => {
+    return (
+      <div className="bg-white border-2 border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+        {/* Recipe Header */}
+        <h3 className="font-heading text-2xl font-bold text-primary mb-2">
+          {recipe.name}
+        </h3>
+
+        {recipe.description && (
+          <p className="text-gray-600 mb-4">{recipe.description}</p>
+        )}
+
+        {/* Recipe Info Pills */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {recipe.servings && (
+            <span className="bg-background text-primary text-xs font-semibold px-3 py-1 rounded-full border border-border">
+              Serves {recipe.servings}
+            </span>
+          )}
+          {recipe.prepTime && (
+            <span className="bg-background text-primary text-xs font-semibold px-3 py-1 rounded-full border border-border">
+              Prep: {recipe.prepTime}
+            </span>
+          )}
+          {recipe.cookTime && (
+            <span className="bg-background text-primary text-xs font-semibold px-3 py-1 rounded-full border border-border">
+              Cook: {recipe.cookTime}
+            </span>
+          )}
+          {recipe.estimatedCost && (
+            <span className="bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full border border-green-200">
+              {recipe.estimatedCost}
+            </span>
+          )}
+          {recipe.totalSavings && (
+            <span className="bg-yellow-50 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full border border-yellow-200">
+              Save {recipe.totalSavings}
+            </span>
+          )}
+        </div>
+
+        {/* Dietary Info */}
+        {recipe.dietaryInfo && recipe.dietaryInfo.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {recipe.dietaryInfo.map((diet, idx) => (
+              <span key={idx} className="bg-secondary text-white text-xs font-semibold px-3 py-1 rounded-full">
+                {diet}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Ingredients */}
+        <div className="mb-4">
+          <h4 className="font-heading text-lg font-semibold text-gray-900 mb-2">
+            Ingredients:
+          </h4>
+          <ul className="space-y-1">
+            {recipe.ingredients && recipe.ingredients.map((ingredient, idx) => (
+              <li key={idx} className="text-sm text-gray-700 flex items-start">
+                <span className="text-primary mr-2">•</span>
+                <span className="flex-1">
+                  <strong>{ingredient.amount}</strong> {ingredient.item}
+                  {ingredient.onSale && (
+                    <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                      ON SALE {ingredient.price && `- ${ingredient.price}`} {ingredient.store && `at ${ingredient.store}`}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Instructions */}
+        <div>
+          <h4 className="font-heading text-lg font-semibold text-gray-900 mb-2">
+            Instructions:
+          </h4>
+          <ol className="space-y-2">
+            {recipe.instructions && recipe.instructions.map((step, idx) => (
+              <li key={idx} className="text-sm text-gray-700 flex items-start">
+                <span className="font-semibold text-primary mr-2 min-w-[1.5rem]">
+                  {idx + 1}.
+                </span>
+                <span className="flex-1">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    );
+  };
+
   const toggleStore = (store) => {
     setSelectedStores(prev =>
       prev.includes(store)
@@ -68,12 +163,40 @@ function App() {
 
     prompt += "Based on the sale items available and my dietary restrictions, please:\n";
     prompt += "1. Find what groceries are currently on sale at my selected stores\n";
-    prompt += "2. Generate 3-5 recipe recommendations that:\n";
+    prompt += "2. Generate at most 3 recipe recommendations that:\n";
     prompt += "   - Use ingredients that are on sale\n";
     prompt += "   - Comply with my dietary restrictions\n";
     prompt += "   - Include the recipe name, ingredients list, and brief cooking instructions\n";
     prompt += "   - Show estimated cost based on sale prices\n\n";
-    prompt += "Please provide detailed, practical recipes I can make this week.";
+
+    // Add JSON format requirement
+    prompt += "IMPORTANT: You MUST respond with valid JSON only, no other text. Use this exact structure:\n";
+    prompt += JSON.stringify({
+      recipes: [{
+        name: "Recipe Name",
+        description: "Brief description",
+        servings: 4,
+        prepTime: "15 minutes",
+        cookTime: "30 minutes",
+        ingredients: [{
+          item: "Ingredient name",
+          amount: "1 cup",
+          onSale: true,
+          store: "Walmart",
+          price: "$2.99"
+        }],
+        instructions: [
+          "Step 1: Do this",
+          "Step 2: Do that"
+        ],
+        estimatedCost: "$12.50",
+        totalSavings: "$5.00",
+        dietaryInfo: ["Vegan"]
+      }],
+      summary: "Brief summary of recipes and savings"
+    }, null, 2);
+
+    prompt += "\n\nReturn ONLY valid JSON with no additional text or formatting.";
 
     return prompt;
   }
@@ -160,12 +283,46 @@ function App() {
   const parseRecipeResponse = (taskData) => {
     const textContent = taskData.status?.message?.parts?.[0]?.text || '';
 
-    return {
-      rawText: textContent,
-      timestamp: taskData.status?.timestamp,
-      artifacts: taskData.artifacts || [],
-      metadata: taskData.metadata || {},
-    };
+    // Try to parse as JSON
+    try {
+      // Clean the text content - remove markdown code blocks if present
+      let cleanedText = textContent.trim();
+
+      // Remove markdown JSON code blocks (```json ... ``` or ``` ... ```)
+      if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      }
+
+      const parsed = JSON.parse(cleanedText);
+
+      // Validate the structure
+      if (parsed.recipes && Array.isArray(parsed.recipes)) {
+        return {
+          recipes: parsed.recipes,
+          summary: parsed.summary || '',
+          rawText: textContent,
+          timestamp: taskData.status?.timestamp,
+          metadata: taskData.metadata || {},
+          isStructured: true,
+        };
+      }
+
+      // If structure is invalid, fall back to raw text
+      throw new Error('Invalid recipe structure');
+
+    } catch (parseError) {
+      console.warn('Failed to parse recipe JSON, displaying as text:', parseError);
+
+      // Fallback to raw text display
+      return {
+        recipes: [],
+        summary: '',
+        rawText: textContent,
+        timestamp: taskData.status?.timestamp,
+        metadata: taskData.metadata || {},
+        isStructured: false,
+      };
+    }
   }
 
   const handleFindRecipe = async () => {
@@ -326,17 +483,34 @@ function App() {
                   <h2 className="font-heading text-3xl font-semibold text-gray-900 mb-4">
                     Recipes Found!
                   </h2>
-                  <p className="text-lg text-gray-600 mb-8">
+                  <p className="text-lg text-gray-600 mb-4">
                     Here are your personalized recipe recommendations
                   </p>
 
-                  {/* Display recipe data */}
-                  <div className="bg-background rounded-lg p-6 mb-8 border border-border">
-                    <div className="text-left whitespace-pre-wrap text-sm leading-relaxed">
-                      {recipes.rawText}
+                  {/* Summary */}
+                  {recipes.summary && recipes.isStructured && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+                      <p className="text-green-800 text-sm font-medium">{recipes.summary}</p>
                     </div>
-                  </div>
+                  )}
 
+                  {/* Structured Recipe Cards */}
+                  {recipes.isStructured && recipes.recipes.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-6 mb-8">
+                      {recipes.recipes.map((recipe, idx) => (
+                        <RecipeCard key={idx} recipe={recipe} />
+                      ))}
+                    </div>
+                  ) : (
+                    /* Fallback: Display raw text if parsing failed */
+                    <div className="bg-background rounded-lg p-6 mb-8 border border-border">
+                      <div className="text-left whitespace-pre-wrap text-sm leading-relaxed">
+                        {recipes.rawText}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Technical Details (optional) */}
                   {recipes.metadata && Object.keys(recipes.metadata).length > 0 && (
                     <details className="mb-4">
                       <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
