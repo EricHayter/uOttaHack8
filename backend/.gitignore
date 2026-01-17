@@ -1,0 +1,22 @@
+# environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# Solace Agent Mesh
+.sam/
+*.db
+sam.log
+*.log
+

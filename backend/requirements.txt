@@ -1,1 +1,1 @@
-solace-agent-mesh
+solace-agent-mesh~=1.13.6
