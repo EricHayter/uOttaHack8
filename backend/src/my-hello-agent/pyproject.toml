@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.my_hello_agent.metadata]
+type = "agent"
+
+[project]
+name = "my_hello_agent"
+version = "0.1.0"
+authors = [
+  { name="Your Name", email="your.email@example.com" },
+]
+description = "A SAM plugin: my hello agent"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # Add plugin-specific dependencies here
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_hello_agent"]
+src-path = "src"
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/my_hello_agent" = "my_hello_agent/"
+"config.yaml" = "my_hello_agent/config.yaml"
+"README.md" = "my_hello_agent/README.md"
+"pyproject.toml" = "my_hello_agent/pyproject.toml"

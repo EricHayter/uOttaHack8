@@ -6,6 +6,10 @@ USER root
 # Install the REST gateway plugin using SAM's plugin system
 RUN sam plugin add http-rest --plugin sam-rest-gateway
 
+# Install your custom plugin package
+COPY src/my-hello-agent /tmp/my-hello-agent
+RUN pip install /tmp/my-hello-agent && rm -rf /tmp/my-hello-agent
+
 # Set the working directory
 WORKDIR /app
 
