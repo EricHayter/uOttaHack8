@@ -3,6 +3,7 @@ import { useState } from 'react'
 function App() {
   const [selectedStores, setSelectedStores] = useState([])
   const [selectedDiets, setSelectedDiets] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
 
   const groceryStores = [
     'Walmart',
@@ -49,9 +50,78 @@ function App() {
   const handleFindRecipe = () => {
     console.log('Selected Stores:', selectedStores)
     console.log('Selected Dietary Restrictions:', selectedDiets)
+    setIsSearching(true)
+  }
 
-    alert(
-      `Finding recipes...\n\nStores: ${selectedStores.join(', ') || 'None'}\nDietary: ${selectedDiets.join(', ') || 'None'}`
+  const handleBack = () => {
+    setIsSearching(false)
+  }
+
+  // Skeleton Loading Page
+  if (isSearching) {
+    return (
+      <div className="bg-white font-body text-text min-h-screen">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Header */}
+          <header className="text-center mb-16">
+            <h1 className="font-heading text-5xl md:text-6xl font-bold text-primary mb-4">
+              RecipeFind
+            </h1>
+          </header>
+
+          {/* Loading Content */}
+          <main className="text-center">
+            <div className="mb-8">
+              {/* Animated spinner */}
+              <div className="inline-block w-16 h-16 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-6"></div>
+
+              <h2 className="font-heading text-3xl font-semibold text-gray-900 mb-4">
+                Finding Perfect Recipes...
+              </h2>
+
+              <p className="text-lg text-gray-600 mb-8">
+                We're searching through thousands of recipes to find the best matches for your preferences
+              </p>
+
+              {/* Selected preferences display */}
+              <div className="max-w-2xl mx-auto text-left space-y-4 mb-12">
+                {selectedStores.length > 0 && (
+                  <div className="bg-background rounded-lg p-4 border border-border">
+                    <h3 className="font-heading font-semibold text-gray-900 mb-2">Selected Stores:</h3>
+                    <p className="text-gray-700">{selectedStores.join(', ')}</p>
+                  </div>
+                )}
+
+                {selectedDiets.length > 0 && (
+                  <div className="bg-background rounded-lg p-4 border border-border">
+                    <h3 className="font-heading font-semibold text-gray-900 mb-2">Dietary Restrictions:</h3>
+                    <p className="text-gray-700">{selectedDiets.join(', ')}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Skeleton recipe cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white border-2 border-gray-200 rounded-lg p-6 animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Back button */}
+              <button
+                onClick={handleBack}
+                className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-heading text-lg font-semibold px-12 py-4 rounded-lg transition-colors duration-200 cursor-pointer"
+              >
+                Back to Search
+              </button>
+            </div>
+          </main>
+        </div>
+      </div>
     )
   }
 
