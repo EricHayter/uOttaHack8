@@ -1,2 +1,3 @@
 solace-agent-mesh~=1.13.6
 requests
+redis

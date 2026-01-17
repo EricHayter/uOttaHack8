@@ -8,11 +8,38 @@ names and discounted prices.
 
 import requests
 import os
+import redis
+import json
+import hashlib
 from pprint import pprint
 
 STORE_URLS = {
-        "nofrills": "https://www.nofrills.ca/en",
+    "nofrills": "https://www.nofrills.ca/en",
+    "costco": "https://www.costco.ca/?langId=-24"
 }
+
+# Redis configuration
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+REDIS_DB = int(os.environ.get('REDIS_DB', 0))
+CACHE_TTL = int(os.environ.get('CACHE_TTL', 3600))  # 1 hour default
+
+
+def get_redis_client():
+    """Get Redis client instance."""
+    try:
+        client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT,
+                             db=REDIS_DB, decode_responses=True)
+        client.ping()  # Test connection
+        return client
+    except redis.ConnectionError:
+        print("Warning: Redis connection failed. Caching disabled.")
+        return None
+
+
+def get_cache_key(site_url: str) -> str:
+    """Generate cache key for a site URL."""
+    return f"scraper:{hashlib.md5(site_url.encode()).hexdigest()}"
 
 
 def get_grocery_store_url(store_name: str) -> str:
@@ -78,16 +105,49 @@ def find_grocery_sale_items(site_url: str) -> list[dict]:
     Note:
         This function requires the YELLOW_CAKE_KEY environment variable to be set.
         Scraping may take 30-60 seconds depending on the website size.
+        Results are cached for 1 hour by default (configurable via CACHE_TTL env var).
     """
-    return [{'item_name': 'Kraft Smooth Peanut Butter 2 kg', 'price': 14.99}, {'item_name': 'Minute Rice Premium Long Grain Rice 1.4 kg', 'price': 7}, {'item_name': 'Kuhn Rikon Square Tray 1L', 'price': 37.5}, {'item_name': 'Kuhn Rikon Rectangular Tray 2L', 'price': 45}, {'item_name': 'Kuhn Rikon Rectangular Tray 3.6L', 'price': 62.5}, {'item_name': 'Kuhn Rikon Mixing Bowl', 'price': 50}, {'item_name': 'Kuhn Rikon Cast Iron Pan 26cm x 26cm', 'price': 160}, {'item_name': 'Kuhn Rikon Cast Iron Dutch Oven 3.9L', 'price': 250}, {'item_name': 'Burnbrae Farms Naturegg Nest Laid White Eggs, Large 12 ea', 'price': 5}, {'item_name': "President's Choice Blueberries Cultivated 600 g", 'price': 4.75}, {'item_name': "President's Choice Mango Chunks 600 g", 'price': 4.75}, {'item_name': 'Natural Bakery Bakery Bread Rye 500 g', 'price': 3.5}, {'item_name': "Earth's Own Almond Beverage, Unsweetened Original 1.89 l", 'price': 3.5}, {'item_name': 'Great British Reserve Cheese, Cheddar 400 g', 'price': 7}, {'item_name': "Brar's Homestyle Yogurt 1800 g", 'price': 7.5}, {'item_name': 'IOGO Nanö Drinkable Strawberry Yogurt 1% 6x93.0 ml', 'price': 3.25}, {'item_name': 'Schneiders Blue Ribbon Classic Bologna 500 g', 'price': 5}, {'item_name': 'Extra Lean Ground Beef, Grass Fed 450 g', 'price': 8}, {'item_name': 'Lilydale Cooked Turkey Breast 500 g', 'price': 7.5}, {'item_name': 'Pam Cooking Spray 170 g', 'price': 5}, {'item_name': 'Samyang Stir-Fried Noodle Hot Chicken Ramen, Carbo 650 g', 'price': 7.5}, {'item_name': 'Twinings 20ct Pure Peppermint 20 ea', 'price': 4}, {'item_name': 'Snackpack Snack Pack, Pudding, Chocolate 4x99.0 g', 'price': 2}, {'item_name': 'Carnation Rich And Creamy Hot Chocolate 450 g', 'price': 6}, {'item_name': 'Chapmans Super Cone Chocolate and Vanilla Ice Cream with Caramel Centre 8x120.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Ice Cream Sandwich Vanilla 12x120.0 ml', 'price': 5}, {'item_name': 'Bens Fried Style Rice Single Serve Cup 68 g', 'price': 2}, {'item_name': 'Bens Jasmine Rice Single Serve Cup 62 g', 'price': 2}, {'item_name': 'Bens Mexican Style Rice Single Serve Cup 68 g', 'price': 2}, {'item_name': 'Bens Roasted Chicken Flavour Rice Single Serve Cup 68 g', 'price': 2}, {'item_name': 'Carnation Simply Hot Chocolate, Canister 400 g', 'price': 6}, {'item_name': 'Carnation Marshmallow Hot Chocolate 450 g', 'price': 6}, {'item_name': 'Chapmans Frozen Yogurt Black Jack Cherry 2 l', 'price': 5}, {'item_name': 'Chapmans Frozen Yogurt Cappuccino 2 l', 'price': 5}, {'item_name': 'Chapmans Frozen Yogurt Cookies & Cream 2 l', 'price': 5}, {'item_name': 'Chapmans Frozen Yogurt Maple Walnut 2 l', 'price': 5}, {'item_name': 'Chapmans Frozen Yogurt 3 Of a Kind Vanilla 2 l', 'price': 5}, {'item_name': 'Chapmans Frozen Yogurt Vanilla 2 l', 'price': 5}, {'item_name': 'Chapmans Super Frozen Yogurt Sandwich Vanilla 12x120.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Cone Caramel and Vanilla Ice Cream with Chocolate Centre 8x120.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Creamy Bar Assorted 18x75.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Frosty Light Ice Cream Bar 18x75.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Fudge Ice Milk Bar 18x75.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Frosty Light Neapolitan Ice Cream Bar 18x75.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Ice Cream Sandwich Neapolitan 12x120.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Ice Cream Sandwich Saucy Spots - Caramel 12x120.0 ml', 'price': 5}, {'item_name': 'Chapmans Super Ice Cream Sandwich Double Decker 12x120.0 ml', 'price': 5}, {'item_name': 'Chapmans Frozen Yogurt Canadian Blueberries & Cream 2 l', 'price': 5}]
+    # Check cache first
+    redis_client = get_redis_client()
+    if redis_client:
+        cache_key = get_cache_key(site_url)
+        cached_data = redis_client.get(cache_key)
+        if cached_data:
+            print(f"Cache hit for {site_url}")
+            return json.loads(cached_data)
+        print(f"Cache miss for {site_url}")
 
+    # Perform scraping
+    scraped_data = _scrape_site(site_url)
+
+    # Cache the results if Redis is available
+    if redis_client and isinstance(scraped_data, list):
+        try:
+            redis_client.setex(cache_key, CACHE_TTL, json.dumps(scraped_data))
+            print(f"Cached results for {site_url}")
+        except Exception as e:
+            print(f"Failed to cache results: {e}")
+
+    return scraped_data
+
+
+def _scrape_site(site_url: str) -> list[dict]:
+    """
+    Internal function to perform the actual web scraping.
+
+    Args:
+        site_url: The URL to scrape
+
+    Returns:
+        List of sale items or error dict
+    """
+    # Mock data for testing when API key is not available
+    if 'YELLOW_CAKE_KEY' not in os.environ:
+        print('Couldn\'t find Yellowcake API key - using mock data')
+        return [{'item_name': 'Kraft Smooth Peanut Butter 2 kg', 'price': 14.99}, {'item_name': 'Minute Rice Premium Long Grain Rice 1.4 kg', 'price': 7}, {'item_name': 'Burnbrae Farms Naturegg Nest Laid White Eggs, Large 12 ea', 'price': 5}]
 
     REQUEST_PROMPT = """extract the name of the items
     that are on sale with their price"""
-
-    if 'YELLOW_CAKE_KEY' not in os.environ:
-        print('Couldn\'t find Yellowcake API key')
-        return []
 
     headers = {
         "Content-Type": "application/json",
@@ -108,18 +168,66 @@ def find_grocery_sale_items(site_url: str) -> list[dict]:
     # Check the response status
     if r.status_code != 200:
         if r.status_code == 401:
-            return {"error": "Authentication failed - check your API key"}
+            return [{"error": "Authentication failed - check your API key"}]
         elif r.status_code == 429:
-            return {"error": "Rate limit exceeded"}
+            return [{"error": "Rate limit exceeded"}]
         else:
-            return {
+            return [{
                 "error": f"Request failed with status {r.status_code}",
                 "details": r.text
-            }
+            }]
 
     # Parse SSE stream to get only the 'complete' event
-    import json
+    try:
+        content = r.text
+        lines = content.split('\n')
+        
+        for i, line in enumerate(lines):
+            if line.strip() == 'event: complete':
+                # Look for the next data line
+                for j in range(i + 1, len(lines)):
+                    if lines[j].startswith('data: '):
+                        try:
+                            json_data = json.loads(lines[j][6:])  # Remove 'data: ' prefix
+                            if json_data.get('success') and 'data' in json_data:
+                                return json_data['data']
+                        except json.JSONDecodeError:
+                            continue
+                        break
+    except Exception as e:
+        print(f"Error parsing response: {e}")
+    
+    return []
 
-    # TODO fix this SSE issue
-    return r.text
 
+def clear_cache(site_url: str = None) -> bool:
+    """
+    Clear cached data for a specific site or all cached data.
+
+    Args:
+        site_url: Optional URL to clear cache for. If None, clears all scraper cache.
+
+    Returns:
+        True if cache was cleared successfully, False otherwise
+    """
+    redis_client = get_redis_client()
+    if not redis_client:
+        return False
+
+    try:
+        if site_url:
+            cache_key = get_cache_key(site_url)
+            result = redis_client.delete(cache_key)
+            print(f"Cleared cache for {site_url}: {result > 0}")
+            return result > 0
+        else:
+            # Clear all scraper cache keys
+            keys = redis_client.keys("scraper:*")
+            if keys:
+                result = redis_client.delete(*keys)
+                print(f"Cleared {result} cache entries")
+                return result > 0
+            return True
+    except Exception as e:
+        print(f"Failed to clear cache: {e}")
+        return False
