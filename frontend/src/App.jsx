@@ -7,6 +7,9 @@ function App() {
   const [isSearching, setIsSearching] = useState(false)
   const [recipes, setRecipes] = useState(null)
   const [error, setError] = useState(null)
+  const [taskId, setTaskId] = useState(null)
+  const [pollingAttempts, setPollingAttempts] = useState(0)
+  const [statusMessage, setStatusMessage] = useState('')
 
   const groceryStores = [
     'Walmart',
@@ -50,6 +53,121 @@ function App() {
     )
   }
 
+  const buildPrompt = (stores, diets) => {
+    let prompt = "I need help finding recipes based on my grocery stores and dietary preferences.\n\n";
+
+    if (stores.length > 0) {
+      prompt += `I shop at the following stores: ${stores.join(', ')}.\n`;
+      prompt += "Please use the available tools to check what items are on sale at these stores.\n\n";
+    }
+
+    if (diets.length > 0) {
+      prompt += `I have the following dietary restrictions: ${diets.join(', ')}.\n`;
+      prompt += "Please ensure all recipe recommendations comply with these dietary requirements.\n\n";
+    }
+
+    prompt += "Based on the sale items available and my dietary restrictions, please:\n";
+    prompt += "1. Find what groceries are currently on sale at my selected stores\n";
+    prompt += "2. Generate 3-5 recipe recommendations that:\n";
+    prompt += "   - Use ingredients that are on sale\n";
+    prompt += "   - Comply with my dietary restrictions\n";
+    prompt += "   - Include the recipe name, ingredients list, and brief cooking instructions\n";
+    prompt += "   - Show estimated cost based on sale prices\n\n";
+    prompt += "Please provide detailed, practical recipes I can make this week.";
+
+    return prompt;
+  }
+
+  const submitTask = async (prompt) => {
+    const formData = new FormData();
+    formData.append('agent_name', 'OrchestratorAgent');
+    formData.append('prompt', prompt);
+
+    const response = await fetch(`${config.apiUrl}/api/v2/tasks`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.authToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to submit task: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.taskId;
+  }
+
+  const pollTask = async (taskId) => {
+    const response = await fetch(`${config.apiUrl}/api/v2/tasks/${taskId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${config.authToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to poll task: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  const pollUntilComplete = async (taskId) => {
+    const startTime = Date.now();
+    const maxAttempts = Math.floor(config.pollingTimeout / config.pollingInterval);
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      setPollingAttempts(attempts);
+
+      const elapsed = Date.now() - startTime;
+      if (elapsed > config.pollingTimeout) {
+        throw new Error('Request timed out after 5 minutes. Please try again.');
+      }
+
+      try {
+        const taskData = await pollTask(taskId);
+
+        if (taskData.status.state === 'in-progress') {
+          setStatusMessage(`Processing your request... (${Math.floor(elapsed / 1000)}s)`);
+        }
+
+        if (taskData.status.state === 'completed') {
+          return taskData;
+        }
+
+        if (taskData.status.state === 'failed') {
+          const errorMsg = taskData.status.message?.parts?.[0]?.text || 'Task failed';
+          throw new Error(`Task failed: ${errorMsg}`);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, config.pollingInterval));
+
+      } catch (pollError) {
+        if (attempts >= maxAttempts) {
+          throw pollError;
+        }
+        await new Promise(resolve => setTimeout(resolve, config.pollingInterval));
+      }
+    }
+
+    throw new Error('Maximum polling attempts reached. Please try again.');
+  }
+
+  const parseRecipeResponse = (taskData) => {
+    const textContent = taskData.status?.message?.parts?.[0]?.text || '';
+
+    return {
+      rawText: textContent,
+      timestamp: taskData.status?.timestamp,
+      artifacts: taskData.artifacts || [],
+      metadata: taskData.metadata || {},
+    };
+  }
+
   const handleFindRecipe = async () => {
     console.log('Selected Stores:', selectedStores)
     console.log('Selected Dietary Restrictions:', selectedDiets)
@@ -57,28 +175,35 @@ function App() {
     setIsSearching(true)
     setError(null)
     setRecipes(null)
+    setTaskId(null)
+    setPollingAttempts(0)
+    setStatusMessage('Submitting your request...')
 
     try {
-      const response = await fetch(`${config.apiUrl}/api/recipes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          stores: selectedStores,
-          dietaryRestrictions: selectedDiets,
-        }),
-      })
+      // Build prompt
+      const prompt = buildPrompt(selectedStores, selectedDiets);
+      console.log('Generated prompt:', prompt);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      // Submit task
+      setStatusMessage('Submitting to recipe agent...')
+      const newTaskId = await submitTask(prompt);
+      setTaskId(newTaskId);
+      console.log('Task submitted with ID:', newTaskId);
 
-      const data = await response.json()
-      setRecipes(data)
+      // Poll until complete
+      setStatusMessage('Waiting for recipes...')
+      const completedTask = await pollUntilComplete(newTaskId);
+      console.log('Task completed:', completedTask);
+
+      // Parse and display results
+      const parsedRecipes = parseRecipeResponse(completedTask);
+      setRecipes(parsedRecipes);
+      setStatusMessage('Recipes found!')
+
     } catch (err) {
       console.error('Error fetching recipes:', err)
       setError(err.message || 'Failed to fetch recipes. Please try again.')
+      setIsSearching(false)
     }
   }
 
@@ -110,7 +235,17 @@ function App() {
                     <h2 className="font-heading text-2xl font-semibold text-red-700 mb-2">
                       Error
                     </h2>
-                    <p className="text-red-600">{error}</p>
+                    <p className="text-red-600 mb-4">{error}</p>
+
+                    <div className="text-sm text-red-600 mt-4">
+                      <p className="font-semibold mb-2">Troubleshooting tips:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Check if the backend server is running on port 8080</li>
+                        <li>Verify your internet connection</li>
+                        <li>Try selecting fewer stores or dietary restrictions</li>
+                        <li>If timeout occurred, the request may be too complex - try again</li>
+                      </ul>
+                    </div>
                   </div>
                   <button
                     onClick={handleBack}
@@ -130,6 +265,18 @@ function App() {
                   <h2 className="font-heading text-3xl font-semibold text-gray-900 mb-4">
                     Finding Perfect Recipes...
                   </h2>
+
+                  {statusMessage && (
+                    <p className="text-md text-primary font-semibold mb-2">
+                      {statusMessage}
+                    </p>
+                  )}
+
+                  {pollingAttempts > 0 && (
+                    <p className="text-sm text-gray-500 mb-4">
+                      Checking for results... (attempt {pollingAttempts})
+                    </p>
+                  )}
 
                   <p className="text-lg text-gray-600 mb-8">
                     We're searching through thousands of recipes to find the best matches for your preferences
@@ -185,10 +332,23 @@ function App() {
 
                   {/* Display recipe data */}
                   <div className="bg-background rounded-lg p-6 mb-8 border border-border">
-                    <pre className="text-left overflow-auto text-sm">
-                      {JSON.stringify(recipes, null, 2)}
-                    </pre>
+                    <div className="text-left whitespace-pre-wrap text-sm leading-relaxed">
+                      {recipes.rawText}
+                    </div>
                   </div>
+
+                  {recipes.metadata && Object.keys(recipes.metadata).length > 0 && (
+                    <details className="mb-4">
+                      <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                        Show Technical Details
+                      </summary>
+                      <div className="bg-gray-50 rounded-lg p-4 mt-2">
+                        <pre className="text-left overflow-auto text-xs">
+                          {JSON.stringify(recipes.metadata, null, 2)}
+                        </pre>
+                      </div>
+                    </details>
+                  )}
 
                   <button
                     onClick={handleBack}
