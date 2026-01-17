@@ -45,11 +45,30 @@ apps:
       enable_embed_resolution: true 
       enable_artifact_content_instruction: true 
       data_tools_config: *default_data_tools_config
-      tools: 
+      tools:
         - group_name: artifact_management
           tool_type: builtin-group
         - tool_type: builtin-group
           group_name: "data_analysis"
+
+        # Custom Python tools from src/scraper.py for finding grocery deals
+        - tool_type: python
+          component_module: scraper
+          component_base_path: src
+          function_name: list_available_grocery_stores
+          tool_config: {}
+
+        - tool_type: python
+          component_module: scraper
+          component_base_path: src
+          function_name: get_grocery_store_url
+          tool_config: {}
+
+        - tool_type: python
+          component_module: scraper
+          component_base_path: src
+          function_name: find_grocery_sale_items
+          tool_config: {}
 
       agent_card:
         description: "The Orchestrator component. It manages tasks and coordinates multi-agent workflows."
