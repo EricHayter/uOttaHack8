@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import config from './config'
 
 function App() {
   const [selectedStores, setSelectedStores] = useState([])
   const [selectedDiets, setSelectedDiets] = useState([])
   const [isSearching, setIsSearching] = useState(false)
+  const [recipes, setRecipes] = useState(null)
+  const [error, setError] = useState(null)
 
   const groceryStores = [
     'Walmart',
@@ -47,17 +50,45 @@ function App() {
     )
   }
 
-  const handleFindRecipe = () => {
+  const handleFindRecipe = async () => {
     console.log('Selected Stores:', selectedStores)
     console.log('Selected Dietary Restrictions:', selectedDiets)
+
     setIsSearching(true)
+    setError(null)
+    setRecipes(null)
+
+    try {
+      const response = await fetch(`${config.apiUrl}/api/recipes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stores: selectedStores,
+          dietaryRestrictions: selectedDiets,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setRecipes(data)
+    } catch (err) {
+      console.error('Error fetching recipes:', err)
+      setError(err.message || 'Failed to fetch recipes. Please try again.')
+    }
   }
 
   const handleBack = () => {
     setIsSearching(false)
+    setRecipes(null)
+    setError(null)
   }
 
-  // Skeleton Loading Page
+  // Skeleton Loading Page / Results Page
   if (isSearching) {
     return (
       <div className="bg-white font-body text-text min-h-screen">
@@ -72,52 +103,101 @@ function App() {
           {/* Loading Content */}
           <main className="text-center">
             <div className="mb-8">
-              {/* Animated spinner */}
-              <div className="inline-block w-16 h-16 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-6"></div>
-
-              <h2 className="font-heading text-3xl font-semibold text-gray-900 mb-4">
-                Finding Perfect Recipes...
-              </h2>
-
-              <p className="text-lg text-gray-600 mb-8">
-                We're searching through thousands of recipes to find the best matches for your preferences
-              </p>
-
-              {/* Selected preferences display */}
-              <div className="max-w-2xl mx-auto text-left space-y-4 mb-12">
-                {selectedStores.length > 0 && (
-                  <div className="bg-background rounded-lg p-4 border border-border">
-                    <h3 className="font-heading font-semibold text-gray-900 mb-2">Selected Stores:</h3>
-                    <p className="text-gray-700">{selectedStores.join(', ')}</p>
+              {/* Error State */}
+              {error && (
+                <div className="mb-8">
+                  <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-6">
+                    <h2 className="font-heading text-2xl font-semibold text-red-700 mb-2">
+                      Error
+                    </h2>
+                    <p className="text-red-600">{error}</p>
                   </div>
-                )}
+                  <button
+                    onClick={handleBack}
+                    className="bg-primary hover:bg-red-700 text-white font-heading text-lg font-semibold px-12 py-4 rounded-lg transition-colors duration-200 cursor-pointer"
+                  >
+                    Back to Search
+                  </button>
+                </div>
+              )}
 
-                {selectedDiets.length > 0 && (
-                  <div className="bg-background rounded-lg p-4 border border-border">
-                    <h3 className="font-heading font-semibold text-gray-900 mb-2">Dietary Restrictions:</h3>
-                    <p className="text-gray-700">{selectedDiets.join(', ')}</p>
+              {/* Loading State */}
+              {!error && !recipes && (
+                <>
+                  {/* Animated spinner */}
+                  <div className="inline-block w-16 h-16 border-4 border-gray-200 border-t-primary rounded-full animate-spin mb-6"></div>
+
+                  <h2 className="font-heading text-3xl font-semibold text-gray-900 mb-4">
+                    Finding Perfect Recipes...
+                  </h2>
+
+                  <p className="text-lg text-gray-600 mb-8">
+                    We're searching through thousands of recipes to find the best matches for your preferences
+                  </p>
+
+                  {/* Selected preferences display */}
+                  <div className="max-w-2xl mx-auto text-left space-y-4 mb-12">
+                    {selectedStores.length > 0 && (
+                      <div className="bg-background rounded-lg p-4 border border-border">
+                        <h3 className="font-heading font-semibold text-gray-900 mb-2">Selected Stores:</h3>
+                        <p className="text-gray-700">{selectedStores.join(', ')}</p>
+                      </div>
+                    )}
+
+                    {selectedDiets.length > 0 && (
+                      <div className="bg-background rounded-lg p-4 border border-border">
+                        <h3 className="font-heading font-semibold text-gray-900 mb-2">Dietary Restrictions:</h3>
+                        <p className="text-gray-700">{selectedDiets.join(', ')}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Skeleton recipe cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white border-2 border-gray-200 rounded-lg p-6 animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                  {/* Skeleton recipe cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="bg-white border-2 border-gray-200 rounded-lg p-6 animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* Back button */}
-              <button
-                onClick={handleBack}
-                className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-heading text-lg font-semibold px-12 py-4 rounded-lg transition-colors duration-200 cursor-pointer"
-              >
-                Back to Search
-              </button>
+                  {/* Back button */}
+                  <button
+                    onClick={handleBack}
+                    className="bg-white border-2 border-primary text-primary hover:bg-primary hover:text-white font-heading text-lg font-semibold px-12 py-4 rounded-lg transition-colors duration-200 cursor-pointer"
+                  >
+                    Back to Search
+                  </button>
+                </>
+              )}
+
+              {/* Success State with Results */}
+              {!error && recipes && (
+                <div>
+                  <h2 className="font-heading text-3xl font-semibold text-gray-900 mb-4">
+                    Recipes Found!
+                  </h2>
+                  <p className="text-lg text-gray-600 mb-8">
+                    Here are your personalized recipe recommendations
+                  </p>
+
+                  {/* Display recipe data */}
+                  <div className="bg-background rounded-lg p-6 mb-8 border border-border">
+                    <pre className="text-left overflow-auto text-sm">
+                      {JSON.stringify(recipes, null, 2)}
+                    </pre>
+                  </div>
+
+                  <button
+                    onClick={handleBack}
+                    className="bg-primary hover:bg-red-700 text-white font-heading text-lg font-semibold px-12 py-4 rounded-lg transition-colors duration-200 cursor-pointer"
+                  >
+                    Back to Search
+                  </button>
+                </div>
+              )}
             </div>
           </main>
         </div>
