@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.recipe_generator.metadata]
+type = "agent"
+
+[project]
+name = "recipe_generator"
+version = "0.1.0"
+authors = [
+  { name="Akash", email="your.email@example.com" },
+]
+description = "A SAM plugin: recipe generator"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # Add plugin-specific dependencies here
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/recipe_generator"]
+src-path = "src"
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/recipe_generator" = "recipe_generator/"
+"config.yaml" = "recipe_generator/config.yaml"
+"README.md" = "recipe_generator/README.md"
+"pyproject.toml" = "recipe_generator/pyproject.toml"

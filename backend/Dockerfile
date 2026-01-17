@@ -10,6 +10,9 @@ RUN sam plugin add http-rest --plugin sam-rest-gateway
 COPY src/my-hello-agent /tmp/my-hello-agent
 RUN pip install /tmp/my-hello-agent && rm -rf /tmp/my-hello-agent
 
+COPY src/recipe-generator /tmp/recipe-generator
+RUN pip install /tmp/recipe-generator && rm -rf /tmp/recipe-generator
+
 # Set the working directory
 WORKDIR /app
 

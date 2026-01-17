@@ -1,20 +1,7 @@
-# Plugin Metadata:
-# Name: my-hello-agent
-# Version: 0.1.0
-# Description: A SAM plugin: my hello agent
-# Author: Your Name <your.email@example.com>
-# 
-# --- Start of Agent Configuration Template ---
-# Solace Agent Mesh: Plugin Configuration Template
-#
-# This file serves as a template for creating new agent configurations from this plugin.
-# Use placeholders like my-hello-agent, MyHelloAgent,
-# and MY_HELLO_AGENT where the specific component name should be inserted.
-
 log:
   stdout_log_level: INFO
   log_file_level: DEBUG
-  log_file: my-hello-agent.log
+  log_file: recipe-generator.log
 
 # To use the `shared_config.yaml` file, uncomment the following line and remove the `shared_config` section below.
 # !include ../shared_config.yaml
@@ -50,7 +37,7 @@ shared_config:
       artifact_scope: namespace # Or "namespace", "app", "custom"
 
 apps:
-  - name: my-hello-agent-app
+  - name: recipe-generator-app
     app_base_path: . 
     app_module: solace_agent_mesh.agent.sac.app 
     broker:
@@ -60,13 +47,23 @@ apps:
     app_config:
       namespace: ${NAMESPACE} 
       supports_streaming: true 
-      agent_name: "MyHelloAgent" 
-      display_name: "My Hello Agent Agent"
+      agent_name: "RecipeGenerator" 
+      display_name: "Recipe Generator Agent"
       model: *general_model 
 
       instruction: |
-        You're My Hello Agent agent.
-        Configure its specific instructions here.
+        You are a Recipe Generator agent. Your specialty is creating delicious meal suggestions based on available ingredients.
+        
+        When provided with ingredients you should:
+        1. Suggest 3-4 meals that can be created with these ingredients
+        2. For each meal, provide:
+           - Recipe name
+           - Brief description
+           - Estimated cooking time
+           - Macros (calories, protein, carbs, fat)
+           - Simple steps to prepare the dish
+        3. Be creative and consider different cuisines and cooking styles
+        4. If ingredients are missing for a complete meal, suggest what could be added
 
       tools:
         - group_name: artifact_management
@@ -82,14 +79,14 @@ apps:
 
         # --- Example Python Tools (defined in tools.py) ---
         # - tool_type: python
-        #   component_module: my_hello_agent.tools
+        #   component_module: recipe_generator.tools
         #   component_base_path: . # Relative to where the agent runs
         #   function_name: example_text_processor_tool
         #   tool_config:
         #     prefix: "PluginProcessed: "
         
         # - tool_type: python
-        #   component_module: my_hello_agent.tools
+        #   component_module: recipe_generator.tools
         #   component_base_path: .
         #   function_name: example_file_creator_tool
         #   tool_config: {} # Add specific config if needed by the tool
@@ -107,13 +104,16 @@ apps:
       enable_artifact_content_instruction: true
 
       agent_card:
-        description: "A SAM plugin: my hello agent"
+        description: "A Recipe Generator agent that suggests meals based on available ingredients"
         defaultInputModes: ["text"]
         defaultOutputModes: ["text"]
-        skills: [] # Remove brackets after adding entries
-          # - id: "example_tool"
-          #   name: "Example Tool"
-          #   description: "An example tool provided by the MyHelloAgent plugin."
+        skills:
+          - id: "recipe_generation"
+            name: "Recipe Generation"
+            description: "Generate meal suggestions from ingredient lists"
+          - id: "cooking_advice"
+            name: "Cooking Advice"
+            description: "Provide cooking tips and instructions"
 
       agent_card_publishing: { interval_seconds: 10 }
       agent_discovery: { enabled: false }

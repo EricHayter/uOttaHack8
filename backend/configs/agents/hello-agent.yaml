@@ -1,0 +1,77 @@
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: hello-agent.log
+
+shared_config:
+  - broker_connection: &broker_connection
+      dev_mode: ${SOLACE_DEV_MODE, false}
+      broker_url: ${SOLACE_BROKER_URL, ws://localhost:8008}
+      broker_username: ${SOLACE_BROKER_USERNAME, default}
+      broker_password: ${SOLACE_BROKER_PASSWORD, default}
+      broker_vpn: ${SOLACE_BROKER_VPN, default}
+      temporary_queue: ${USE_TEMPORARY_QUEUES, true}
+
+  - models:
+    general: &general_model
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+      api_base: ${LLM_SERVICE_ENDPOINT}
+      api_key: ${LLM_SERVICE_API_KEY}
+
+  - services:
+    session_service: &default_session_service
+      type: "memory"
+      default_behavior: "PERSISTENT"
+    
+    artifact_service: &default_artifact_service
+      type: "filesystem"
+      base_path: "/tmp/samv2"
+      artifact_scope: namespace
+
+apps:
+  - name: hello-agent
+    app_module: solace_agent_mesh.agent.sac.app 
+    broker:
+      <<: *broker_connection
+    
+    app_config:
+      namespace: ${NAMESPACE} 
+      supports_streaming: true 
+      agent_name: "HelloAgent"
+      display_name: "Hello World Agent"
+      
+      model: *general_model 
+      
+      instruction: |
+        You are a friendly Hello World agent. Your purpose is to greet users and 
+        demonstrate the capabilities of Agent Mesh. 
+        
+        When someone says hello or greets you, respond with a warm greeting.
+        When someone says goodbye, respond with a friendly farewell.
+        
+        Always be polite and helpful!
+      
+      agent_card:
+        description: "A friendly Hello World agent that demonstrates basic Agent Mesh capabilities"
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text"]
+        skills:
+          - id: "greeting"
+            name: "Greeting"
+            description: "Greets users with friendly messages"
+          - id: "conversation"
+            name: "Conversation"
+            description: "Engages in friendly conversation"
+      
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+
+      artifact_handling_mode: "reference"
+      enable_embed_resolution: true
+      enable_artifact_content_instruction: true
+
+      agent_card_publishing: { interval_seconds: 10 }
+      agent_discovery: { enabled: false }
+      inter_agent_communication:
+        allow_list: []
+        request_timeout_seconds: 30
