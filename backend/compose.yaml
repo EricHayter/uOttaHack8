@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  solace-agent-mesh:
+    image: solace/solace-agent-mesh:latest
+    platform: linux/amd64
+    user: "1000:1000"
+    command: run
+    ports:
+      - "8000:8000"   # FastAPI HTTP
+      - "8443:8443"   # FastAPI HTTPS
+      - "8001:8001"   # Platform API
+      - "5002:5002"   # Web UI (for init/config)
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
