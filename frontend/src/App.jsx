@@ -28,6 +28,7 @@ function App() {
     'Paleo',
     'Nut-Free',
     'Low-Carb',
+    'High Protein',
     'Halal',
     'Kosher',
     'Low-Sodium',
