@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
   solace-agent-mesh:
     build:
       context: .
@@ -20,3 +29,8 @@ services:
     stdin_open: true
     tty: true
     restart: unless-stopped
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
