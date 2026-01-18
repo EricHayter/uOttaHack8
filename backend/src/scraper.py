@@ -18,7 +18,10 @@ from typing import Optional
 
 STORE_URLS = {
     "nofrills": "https://www.nofrills.ca/en",
-    "costco": "https://www.costco.ca/?langId=-24"
+    "costco": "https://www.costco.ca/?langId=-24",
+    "foodbasics": "https://www.foodbasics.ca/",
+    "walmart": "https://www.walmart.ca/en/cp/grocery/10019?icid=home_page_grocery_grocery_d_128750_UIQ8379D3Q",
+    "superstore": "https://www.realcanadiansuperstore.ca/en",
 }
 
 # Redis configuration
@@ -184,7 +187,7 @@ def _scrape_site(site_url: str) -> list[dict]:
     try:
         content = r.text
         lines = content.split('\n')
-        
+
         for i, line in enumerate(lines):
             if line.strip() == 'event: complete':
                 # Look for the next data line
@@ -199,7 +202,7 @@ def _scrape_site(site_url: str) -> list[dict]:
                         break
     except Exception as e:
         print(f"Error parsing response: {e}")
-    
+
     return []
 
 

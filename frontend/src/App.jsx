@@ -12,14 +12,11 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('')
 
   const groceryStores = [
-    'Walmart',
-    'Target',
-    'Kroger',
-    'Whole Foods',
-    'Safeway',
-    "Trader Joe's",
+    'No Frills',
     'Costco',
-    'Aldi'
+    'Food Basics',
+    'Walmart',
+    'Real Canadian Superstore'
   ]
 
   const dietaryRestrictions = [
@@ -146,13 +143,25 @@ function App() {
     )
   }
 
+  // Map display names to backend store keys
+  const storeNameToKey = {
+    'No Frills': 'nofrills',
+    'Costco': 'costco',
+    'Food Basics': 'foodbasics',
+    'Walmart': 'walmart',
+    'Real Canadian Superstore': 'superstore'
+  }
+
   const buildPrompt = (stores, diets) => {
     let prompt = "I need help finding recipes based on my grocery stores and dietary preferences.\n\n";
 
     if (stores.length > 0) {
+      // Convert display names to backend keys
+      const storeKeys = stores.map(store => storeNameToKey[store] || store.toLowerCase().replace(/\s+/g, ''))
+
       prompt += `I shop at the following stores: ${stores.join(', ')}.\n`;
-      prompt += "IMPORTANT: Use find_multiple_grocery_sale_items_sync to scrape ALL stores in PARALLEL (not one by one).\n";
-      prompt += "First call list_available_grocery_stores to see which stores are supported, then scrape them all at once.\n\n";
+      prompt += `IMPORTANT: Use find_multiple_grocery_sale_items_sync([${storeKeys.map(k => `"${k}"`).join(', ')}]) to scrape ALL stores in PARALLEL.\n`;
+      prompt += "Do NOT call find_grocery_sale_items multiple times. Call find_multiple_grocery_sale_items_sync ONCE with the full list of stores.\n\n";
     }
 
     if (diets.length > 0) {
