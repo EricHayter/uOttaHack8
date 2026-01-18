@@ -25,7 +25,7 @@ STORE_URLS = {
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 REDIS_DB = int(os.environ.get('REDIS_DB', 0))
-CACHE_TTL = int(os.environ.get('CACHE_TTL', 3600))  # 1 hour default
+CACHE_TTL = int(os.environ.get('CACHE_TTL', 604800))  # 7 days default (grocery sales are typically weekly)
 
 
 def get_redis_client():
