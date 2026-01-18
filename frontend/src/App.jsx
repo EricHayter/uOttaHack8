@@ -40,40 +40,40 @@ function App() {
   // Recipe Card Component
   const RecipeCard = ({ recipe }) => {
     return (
-      <div className="bg-white border-2 border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="bg-white border-2 border-border rounded-lg p-8 shadow-sm hover:shadow-md transition-shadow duration-200">
         {/* Recipe Header */}
-        <h3 className="font-heading text-2xl font-bold text-primary mb-2">
+        <h3 className="font-heading text-3xl font-bold text-primary mb-3">
           {recipe.name}
         </h3>
 
         {recipe.description && (
-          <p className="text-gray-600 mb-4">{recipe.description}</p>
+          <p className="text-base text-gray-600 mb-6">{recipe.description}</p>
         )}
 
         {/* Recipe Info Pills */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-6">
           {recipe.servings && (
-            <span className="bg-background text-primary text-xs font-semibold px-3 py-1 rounded-full border border-border">
+            <span className="bg-background text-primary text-sm font-semibold px-3 py-1 rounded-full border border-border">
               Serves {recipe.servings}
             </span>
           )}
           {recipe.prepTime && (
-            <span className="bg-background text-primary text-xs font-semibold px-3 py-1 rounded-full border border-border">
+            <span className="bg-background text-primary text-sm font-semibold px-3 py-1 rounded-full border border-border">
               Prep: {recipe.prepTime}
             </span>
           )}
           {recipe.cookTime && (
-            <span className="bg-background text-primary text-xs font-semibold px-3 py-1 rounded-full border border-border">
+            <span className="bg-background text-primary text-sm font-semibold px-3 py-1 rounded-full border border-border">
               Cook: {recipe.cookTime}
             </span>
           )}
           {recipe.estimatedCost && (
-            <span className="bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full border border-green-200">
+            <span className="bg-green-50 text-green-700 text-sm font-semibold px-3 py-1 rounded-full border border-green-200">
               {recipe.estimatedCost}
             </span>
           )}
           {recipe.totalSavings && (
-            <span className="bg-yellow-50 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full border border-yellow-200">
+            <span className="bg-yellow-50 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full border border-yellow-200">
               Save {recipe.totalSavings}
             </span>
           )}
@@ -81,9 +81,9 @@ function App() {
 
         {/* Dietary Info */}
         {recipe.dietaryInfo && recipe.dietaryInfo.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-6">
             {recipe.dietaryInfo.map((diet, idx) => (
-              <span key={idx} className="bg-secondary text-white text-xs font-semibold px-3 py-1 rounded-full">
+              <span key={idx} className="bg-secondary text-white text-sm font-semibold px-3 py-1 rounded-full">
                 {diet}
               </span>
             ))}
@@ -91,22 +91,20 @@ function App() {
         )}
 
         {/* Ingredients */}
-        <div className="mb-4">
-          <h4 className="font-heading text-lg font-semibold text-gray-900 mb-2">
+        <div className="mb-6">
+          <h4 className="font-heading text-xl font-semibold text-gray-900 mb-3">
             Ingredients:
           </h4>
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {recipe.ingredients && recipe.ingredients.map((ingredient, idx) => (
-              <li key={idx} className="text-sm text-gray-700 flex items-start">
+              <li key={idx} className="text-base text-gray-700">
                 <span className="text-primary mr-2">•</span>
-                <span className="flex-1">
-                  <strong>{ingredient.amount}</strong> {ingredient.item}
-                  {ingredient.onSale && (
-                    <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
-                      ON SALE {ingredient.price && `- ${ingredient.price}`} {ingredient.store && `at ${ingredient.store}`}
-                    </span>
-                  )}
-                </span>
+                <strong>{ingredient.amount}</strong> {ingredient.item}
+                {ingredient.onSale && (
+                  <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                    ON SALE {ingredient.price && `- ${ingredient.price}`} {ingredient.store && `at ${ingredient.store}`}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -114,16 +112,16 @@ function App() {
 
         {/* Instructions */}
         <div>
-          <h4 className="font-heading text-lg font-semibold text-gray-900 mb-2">
+          <h4 className="font-heading text-xl font-semibold text-gray-900 mb-3">
             Instructions:
           </h4>
-          <ol className="space-y-2">
+          <ol className="space-y-3">
             {recipe.instructions && recipe.instructions.map((step, idx) => (
-              <li key={idx} className="text-sm text-gray-700 flex items-start">
-                <span className="font-semibold text-primary mr-2 min-w-[1.5rem]">
+              <li key={idx} className="text-base text-gray-700 flex items-start text-left">
+                <span className="font-semibold text-primary mr-3 min-w-[1.5rem]">
                   {idx + 1}.
                 </span>
-                <span className="flex-1">{step}</span>
+                <span className="flex-1 text-left">{step}</span>
               </li>
             ))}
           </ol>
@@ -153,7 +151,8 @@ function App() {
 
     if (stores.length > 0) {
       prompt += `I shop at the following stores: ${stores.join(', ')}.\n`;
-      prompt += "Please use the available tools to check what items are on sale at these stores.\n\n";
+      prompt += "IMPORTANT: Use find_multiple_grocery_sale_items_sync to scrape ALL stores in PARALLEL (not one by one).\n";
+      prompt += "First call list_available_grocery_stores to see which stores are supported, then scrape them all at once.\n\n";
     }
 
     if (diets.length > 0) {
@@ -186,8 +185,11 @@ function App() {
           price: "$2.99"
         }],
         instructions: [
-          "Step 1: Do this",
-          "Step 2: Do that"
+          "Add 200g frozen mango chunks, 200g blueberries, yogurt, and almond beverage to a blender",
+          "Blend until smooth and thick (add more almond milk if too thick)",
+          "Pour into two bowls",
+          "Top with remaining fresh blueberries and mango chunks",
+          "Drizzle with peanut butter and serve immediately"
         ],
         estimatedCost: "$12.50",
         totalSavings: "$5.00",
@@ -259,6 +261,8 @@ function App() {
         }
 
         if (taskData.status.state === 'completed') {
+          console.log('Task completed! Full response:', taskData);
+          console.log('Status message:', taskData.status?.message);
           return taskData;
         }
 
@@ -281,7 +285,25 @@ function App() {
   }
 
   const parseRecipeResponse = (taskData) => {
+    console.log('Full taskData:', taskData);
+
     const textContent = taskData.status?.message?.parts?.[0]?.text || '';
+
+    console.log('Extracted text content:', textContent);
+    console.log('Text content length:', textContent.length);
+
+    // Check if response is empty
+    if (!textContent || textContent.trim().length === 0) {
+      console.error('Response is empty. Full task data:', JSON.stringify(taskData, null, 2));
+      return {
+        recipes: [],
+        summary: '',
+        rawText: 'Error: No response received from the agent. The task may have failed or timed out.',
+        timestamp: taskData.status?.timestamp,
+        metadata: taskData.metadata || {},
+        isStructured: false,
+      };
+    }
 
     // Try to parse as JSON
     try {
@@ -292,6 +314,8 @@ function App() {
       if (cleanedText.startsWith('```')) {
         cleanedText = cleanedText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       }
+
+      console.log('Cleaned text for parsing:', cleanedText.substring(0, 200));
 
       const parsed = JSON.parse(cleanedText);
 
@@ -312,12 +336,13 @@ function App() {
 
     } catch (parseError) {
       console.warn('Failed to parse recipe JSON, displaying as text:', parseError);
+      console.warn('Raw text content:', textContent.substring(0, 500));
 
       // Fallback to raw text display
       return {
         recipes: [],
         summary: '',
-        rawText: textContent,
+        rawText: textContent || 'Error: Unable to parse response',
         timestamp: taskData.status?.timestamp,
         metadata: taskData.metadata || {},
         isStructured: false,

@@ -30,8 +30,20 @@ apps:
            b. Multi-Agent Coordination: If task completion requires a coordinated effort from multiple peer agents: first, devise a logical execution plan (detailing the sequence of agent invocations and any necessary data handoffs). Then, manage the execution of this plan, invoking each agent in the defined order.
            c. Direct Execution: If the task is not suitable for delegation (neither to a single agent nor a multi-agent sequence) and falls within your own capabilities, execute the task yourself.
 
+        Grocery Scraping Guidelines:
+        - When the user asks to check multiple grocery stores, ALWAYS use find_multiple_grocery_sale_items_sync with a list of store names.
+        - NEVER call find_grocery_sale_items multiple times in a row - this is slow and inefficient.
+        - find_multiple_grocery_sale_items_sync scrapes all stores in parallel and is much faster.
+        - Example: If user mentions ["Walmart", "Target", "Kroger"], call find_multiple_grocery_sale_items_sync(["walmart", "target", "kroger"]) once.
+
+        Recipe Response Guidelines:
+        - When generating recipe recommendations, return the JSON response DIRECTLY in your text response.
+        - DO NOT create artifacts for recipe responses.
+        - DO NOT use artifact_return, write_artifact, or any artifact tools for recipe JSON.
+        - Simply output the JSON in your final response text.
+
         Artifact Management Guidelines:
-        - You must review your artifacts and return the ones that are important for the user by using artifact_return embed. You can use list_artifacts to see all available artifacts.
+        - For non-recipe tasks, you may use artifacts when appropriate.
         - Provide regular progress updates using `status_update` embed directives, especially before initiating any tool call.
       inject_system_purpose: true
       inject_response_format: true
@@ -68,6 +80,12 @@ apps:
           component_module: scraper
           component_base_path: src
           function_name: find_grocery_sale_items
+          tool_config: {}
+
+        - tool_type: python
+          component_module: scraper
+          component_base_path: src
+          function_name: find_multiple_grocery_sale_items_sync
           tool_config: {}
 
       agent_card:
