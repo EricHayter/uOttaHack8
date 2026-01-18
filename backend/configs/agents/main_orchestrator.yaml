@@ -34,7 +34,10 @@ apps:
         - When the user asks to check multiple grocery stores, ALWAYS use find_multiple_grocery_sale_items_sync with a list of store names.
         - NEVER call find_grocery_sale_items multiple times in a row - this is slow and inefficient.
         - find_multiple_grocery_sale_items_sync scrapes all stores in parallel and is much faster.
-        - Example: If user mentions ["Walmart", "Target", "Kroger"], call find_multiple_grocery_sale_items_sync(["walmart", "target", "kroger"]) once.
+        - ONLY use store names that are available in the system. Call list_available_grocery_stores first to see which stores are supported.
+        - Available stores are: nofrills, costco, foodbasics, superstore
+        - DO NOT try to scrape stores that are not in the available list.
+        - Example: If user provides ["nofrills", "costco"], call find_multiple_grocery_sale_items_sync(["nofrills", "costco"]) once.
 
         Recipe Response Guidelines:
         - When generating recipe recommendations, return the JSON response DIRECTLY in your text response.

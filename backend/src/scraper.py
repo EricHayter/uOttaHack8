@@ -20,7 +20,6 @@ STORE_URLS = {
     "nofrills": "https://www.nofrills.ca/en",
     "costco": "https://www.costco.ca/?langId=-24",
     "foodbasics": "https://www.foodbasics.ca/",
-    "walmart": "https://www.walmart.ca/en/cp/grocery/10019?icid=home_page_grocery_grocery_d_128750_UIQ8379D3Q",
     "superstore": "https://www.realcanadiansuperstore.ca/en",
 }
 

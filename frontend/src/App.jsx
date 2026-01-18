@@ -15,7 +15,6 @@ function App() {
     'No Frills',
     'Costco',
     'Food Basics',
-    'Walmart',
     'Real Canadian Superstore'
   ]
 
@@ -149,7 +148,6 @@ function App() {
     'No Frills': 'nofrills',
     'Costco': 'costco',
     'Food Basics': 'foodbasics',
-    'Walmart': 'walmart',
     'Real Canadian Superstore': 'superstore'
   }
 
@@ -459,14 +457,8 @@ function App() {
                   </h2>
 
                   {statusMessage && (
-                    <p className="text-md text-primary font-semibold mb-2">
+                    <p className="text-md text-primary font-semibold mb-4">
                       {statusMessage}
-                    </p>
-                  )}
-
-                  {pollingAttempts > 0 && (
-                    <p className="text-sm text-gray-500 mb-4">
-                      Checking for results... (attempt {pollingAttempts})
                     </p>
                   )}
 
